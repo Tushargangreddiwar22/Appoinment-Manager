@@ -28,7 +28,8 @@
       "description": "Project review meeting and Preparing for the meeting.",
       "date": "2026-02-13",
       "user_id": "tushar_it",
-      "id": "1"
+      "id": "1",
+      "status": "completed"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

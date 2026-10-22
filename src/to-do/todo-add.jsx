@@ -24,7 +24,8 @@ export function ToDoAdd() {
             try {
                 await axios.post(`${API_URL}/appointments`, {
                     ...values,
-                    user_id: cookies.userid
+                    user_id: cookies.userid,
+                    status: "pending"
                 });
                 navigate("/dashboard");
             } catch (requestError) {
