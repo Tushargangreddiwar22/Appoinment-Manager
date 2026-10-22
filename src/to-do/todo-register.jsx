@@ -63,7 +63,8 @@ export function TodoRegister() {
                     {
                         ...user,
                         user_id: user.user_id.trim(),
-                        email: user.email.trim()
+                        email: user.email.trim(),
+                        role: "user"
                     }
                 );
 

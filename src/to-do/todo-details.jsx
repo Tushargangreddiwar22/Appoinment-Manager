@@ -27,11 +27,11 @@ export function ToDoDetails() {
     const [loading, setLoading] = useState(true);
     const [updatingAppointmentId, setUpdatingAppointmentId] = useState(null);
     const [activeFilter, setActiveFilter] = useState("all");
-    const { searchTerm = "" } = useOutletContext() ?? {};
+    const { searchTerm = "", isAdmin = false } = useOutletContext() ?? {};
     const [pagination, setPagination] = useState({ page: 1, searchTerm });
     const today = getTodayDate();
     const matchingAppointments = appointments.filter((appointment) => {
-        const matchesSearch = `${appointment.title} ${appointment.description}`.toLowerCase()
+        const matchesSearch = `${appointment.title} ${appointment.description} ${appointment.user_name ?? ""} ${appointment.user_id ?? ""}`.toLowerCase()
             .includes(searchTerm.trim().toLowerCase());
         const isCompleted = appointment.status === "completed";
         const isUpcoming = !isCompleted && (appointment.date?.slice(0, 10) ?? "") >= today;
@@ -59,10 +59,18 @@ export function ToDoDetails() {
             setError("");
             setLoading(true);
             try {
-                const response = await axios.get(`${API_URL}/appointments`);
+                const [response, userResponse] = await Promise.all([
+                    axios.get(`${API_URL}/appointments`),
+                    isAdmin ? axios.get(`${API_URL}/users`) : Promise.resolve({ data: [] })
+                ]);
                 if (active) {
                     setAppointments(
-                        response.data.filter((appointment) => appointment.user_id === cookies.userid)
+                        response.data
+                            .filter((appointment) => isAdmin || appointment.user_id === cookies.userid)
+                            .map((appointment) => ({
+                                ...appointment,
+                                user_name: userResponse.data.find((user) => user.user_id === appointment.user_id)?.user_name
+                            }))
                     );
                 }
             } catch (requestError) {
@@ -84,21 +92,21 @@ export function ToDoDetails() {
         return () => {
             active = false;
         };
-    }, [cookies.userid]);
+    }, [cookies.userid, isAdmin]);
 
-    async function markAsComplete(appointment) {
+    async function updateStatus(appointment, status) {
         setError("");
         setUpdatingAppointmentId(appointment.id);
         try {
             const response = await axios.patch(`${API_URL}/appointments/${appointment.id}`, {
-                status: "completed"
+                status
             });
             setAppointments((existingAppointments) => existingAppointments.map((existingAppointment) => (
                 existingAppointment.id === appointment.id ? response.data : existingAppointment
             )));
         } catch (requestError) {
-            console.error("Unable to complete appointment:", requestError);
-            setError("Unable to mark this appointment as complete. Please try again.");
+            console.error("Unable to update appointment status:", requestError);
+            setError("Unable to update this appointment status. Please try again.");
         } finally {
             setUpdatingAppointmentId(null);
         }
@@ -121,7 +129,7 @@ export function ToDoDetails() {
             {error && <div className="alert alert-danger mt-3" role="alert">{error}</div>}
             <section className="task-list-card">
                 <div className="task-list-header">
-                    <div><h2>Your appointments</h2><p>Meetings, visits, and plans on your calendar.</p></div>
+                    <div><h2>{isAdmin ? "All appointments" : "Your appointments"}</h2><p>{isAdmin ? "Appointments across all registered users." : "Meetings, visits, and plans on your calendar."}</p></div>
                     <span className="task-count">{matchingAppointments.length} {matchingAppointments.length === 1 ? "appointment" : "appointments"}</span>
                 </div>
                 <div className="appointment-filters" role="tablist" aria-label="Filter appointments">
@@ -160,27 +168,35 @@ export function ToDoDetails() {
                                     <div className="task-row-main">
                                         <h3>{appointment.title}</h3>
                                         <p>{appointment.description || "No description added."}</p>
+                                        {isAdmin && <span className="appointment-owner">
+                                            <i className="bi bi-person"></i>
+                                            {appointment.user_name || appointment.user_id}
+                                            {appointment.user_name && <span> · {appointment.user_id}</span>}
+                                        </span>}
                                     </div>
-                                    <span className={`appointment-status${isCompleted ? " appointment-status-completed" : ""}`}>
-                                        {isCompleted ? "Completed" : "Pending"}
-                                    </span>
+                                    {isAdmin ? (
+                                        <label className="appointment-status-control">
+                                            <span className="visually-hidden">Status for {appointment.title}</span>
+                                            <select
+                                                className={`appointment-status-select${isCompleted ? " appointment-status-completed" : ""}`}
+                                                value={appointment.status === "completed" ? "completed" : "pending"}
+                                                disabled={updatingAppointmentId === appointment.id}
+                                                onChange={(event) => updateStatus(appointment, event.target.value)}
+                                            >
+                                                <option value="pending">Pending</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                        </label>
+                                    ) : (
+                                        <span className={`appointment-status${isCompleted ? " appointment-status-completed" : ""}`}>
+                                            {isCompleted ? "Completed" : "Pending"}
+                                        </span>
+                                    )}
                                     <span className={`task-date${isPast ? " task-date-overdue" : ""}`}>
                                         <i className="bi bi-calendar3"></i>
                                         {taskDate ? taskDate.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date"}
                                     </span>
                                     <div className="task-row-actions">
-                                        {!isCompleted && (
-                                            <button
-                                                type="button"
-                                                className="icon-button icon-button-complete"
-                                                aria-label={`Mark ${appointment.title} as complete`}
-                                                title="Mark as complete"
-                                                disabled={updatingAppointmentId === appointment.id}
-                                                onClick={() => markAsComplete(appointment)}
-                                            >
-                                                <i className="bi bi-check2"></i>
-                                            </button>
-                                        )}
                                         <Link to={`edit/${appointment.id}`} className="icon-button" aria-label={`Edit ${appointment.title}`}><i className="bi bi-pencil"></i></Link>
                                         <Link to={`delete/${appointment.id}`} className="icon-button icon-button-danger" aria-label={`Delete ${appointment.title}`}><i className="bi bi-trash3"></i></Link>
                                     </div>

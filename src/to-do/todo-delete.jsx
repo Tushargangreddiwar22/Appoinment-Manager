@@ -5,22 +5,29 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const API_URL = "http://localhost:3000";
 
-export function ToDoDelete() {
+export function ToDoDelete({ adminMode = false }) {
     const [cookies] = useCookies(["userid"]);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
     const navigate = useNavigate();
     const { id } = useParams();
+    const dashboardPath = adminMode ? "/admin" : "/dashboard";
 
     useEffect(() => {
         let active = true;
 
         async function verifyTask() {
             try {
-                const response = await axios.get(`${API_URL}/appointments/${id}`);
-                if (response.data.user_id !== cookies.userid) {
-                    navigate("/dashboard", { replace: true });
+                const [response, usersResponse] = await Promise.all([
+                    axios.get(`${API_URL}/appointments/${id}`),
+                    axios.get(`${API_URL}/users`)
+                ]);
+                const currentUser = usersResponse.data.find((user) => user.user_id === cookies.userid);
+                const currentUserIsAdmin = currentUser?.role === "admin";
+                if ((adminMode && !currentUserIsAdmin)
+                    || (!currentUserIsAdmin && response.data.user_id !== cookies.userid)) {
+                    navigate(currentUserIsAdmin ? "/admin" : "/dashboard", { replace: true });
                 } else if (active) {
                     setAuthorized(true);
                 }
@@ -45,13 +52,13 @@ export function ToDoDelete() {
         return () => {
             active = false;
         };
-    }, [cookies.userid, id, navigate]);
+    }, [adminMode, cookies.userid, id, navigate]);
 
     async function deleteTask() {
         setError("");
         try {
             await axios.delete(`${API_URL}/appointments/${id}`);
-            navigate("/dashboard");
+            navigate(dashboardPath);
         } catch (requestError) {
             console.error("Unable to delete appointment:", requestError);
             setError("Unable to delete this appointment. Please try again.");
@@ -60,7 +67,7 @@ export function ToDoDelete() {
 
     return (
         <section className="task-form-page">
-            <div className="task-form-heading"><span className="eyebrow">APPOINTMENT MANAGEMENT</span><h2>Delete appointment</h2><p>This action can’t be undone.</p></div>
+            <div className="task-form-heading"><span className="eyebrow">{adminMode ? "ADMINISTRATOR PANEL" : "APPOINTMENT MANAGEMENT"}</span><h2>Delete appointment</h2><p>This action can’t be undone.</p></div>
             {error && <div className="alert alert-danger" role="alert">{error}</div>}
             {loading ? (
                 <p role="status">Loading appointment...</p>
@@ -73,7 +80,7 @@ export function ToDoDelete() {
                         <button type="button" className="button button-danger" onClick={deleteTask} disabled={Boolean(error)}>
                             <i className="bi bi-trash3"></i> Delete appointment
                         </button>
-                        <Link to="/dashboard" className="button button-quiet">Keep appointment</Link>
+                        <Link to={dashboardPath} className="button button-quiet">Keep appointment</Link>
                     </div>
                 </div>
             ) : null}

@@ -8,11 +8,13 @@ import { ToDoAdd } from "./todo-add.jsx";
 import { ToDoEdit } from "./todo-edit.jsx";
 import { ToDoDelete } from "./todo-delete.jsx";
 import { ToDoDetails } from "./todo-details.jsx";
+import { TodoUsers } from "./todo-users.jsx";
 
 function ApplicationLayout() {
     const [cookies] = useCookies(["userid", "username"]);
     const location = useLocation();
-    const isDashboard = location.pathname.startsWith("/dashboard");
+    const isDashboard = location.pathname.startsWith("/dashboard")
+        || location.pathname.startsWith("/admin");
 
     return (
         <div className="app-shell">
@@ -45,11 +47,17 @@ function ApplicationLayout() {
                     <Route path="/" element={<TodoHome />} />
                     <Route path="/login" element={<TodoLogin />} />
                     <Route path="/register" element={<TodoRegister />} />
-                    <Route path="/dashboard" element={<TodoDashboard />}>
+                    <Route path="/dashboard" element={<TodoDashboard requiredRole="user" />}>
                         <Route index element={<ToDoDetails />} />
                         <Route path="add" element={<ToDoAdd />} />
                         <Route path="edit/:id" element={<ToDoEdit />} />
                         <Route path="delete/:id" element={<ToDoDelete />} />
+                    </Route>
+                    <Route path="/admin" element={<TodoDashboard requiredRole="admin" />}>
+                        <Route index element={<ToDoDetails />} />
+                        <Route path="users" element={<TodoUsers />} />
+                        <Route path="edit/:id" element={<ToDoEdit adminMode />} />
+                        <Route path="delete/:id" element={<ToDoDelete adminMode />} />
                     </Route>
                     <Route path="*" element={<TodoHome />} />
                 </Routes>

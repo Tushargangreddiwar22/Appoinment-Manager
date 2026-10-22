@@ -6,13 +6,14 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const API_URL = "http://localhost:3000";
 
-export function ToDoEdit() {
+export function ToDoEdit({ adminMode = false }) {
     const [cookies] = useCookies(["userid"]);
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const { id } = useParams();
+    const dashboardPath = adminMode ? "/admin" : "/dashboard";
 
     const formik = useFormik({
         initialValues: {
@@ -24,7 +25,7 @@ export function ToDoEdit() {
             setError("");
             try {
                 await axios.patch(`${API_URL}/appointments/${id}`, values);
-                navigate("/dashboard");
+                navigate(dashboardPath);
             } catch (requestError) {
                 console.error("Unable to update appointment:", requestError);
                 setError("Unable to save this appointment. Please try again.");
@@ -40,9 +41,15 @@ export function ToDoEdit() {
             setLoading(true);
             setError("");
             try {
-                const response = await axios.get(`${API_URL}/appointments/${id}`);
-                if (response.data.user_id !== cookies.userid) {
-                    navigate("/dashboard", { replace: true });
+                const [response, usersResponse] = await Promise.all([
+                    axios.get(`${API_URL}/appointments/${id}`),
+                    axios.get(`${API_URL}/users`)
+                ]);
+                const currentUser = usersResponse.data.find((user) => user.user_id === cookies.userid);
+                const currentUserIsAdmin = currentUser?.role === "admin";
+                if ((adminMode && !currentUserIsAdmin)
+                    || (!currentUserIsAdmin && response.data.user_id !== cookies.userid)) {
+                    navigate(currentUserIsAdmin ? "/admin" : "/dashboard", { replace: true });
                     return;
                 }
                 if (active) {
@@ -74,7 +81,7 @@ export function ToDoEdit() {
         return () => {
             active = false;
         };
-    }, [cookies.userid, id, navigate, setValues]);
+    }, [adminMode, cookies.userid, id, navigate, setValues]);
 
     if (loading) {
         return <p className="mt-3" role="status">Loading appointment...</p>;
@@ -85,7 +92,7 @@ export function ToDoEdit() {
 
     return (
         <section className="task-form-page">
-            <div className="task-form-heading"><span className="eyebrow">UPDATE YOUR SCHEDULE</span><h2>Edit appointment</h2><p>Update the details or change the date.</p></div>
+            <div className="task-form-heading"><span className="eyebrow">{adminMode ? "ADMINISTRATOR PANEL" : "UPDATE YOUR SCHEDULE"}</span><h2>Edit appointment</h2><p>Update the details or change the date.</p></div>
             {error && <div className="alert alert-danger" role="alert">{error}</div>}
             <form onSubmit={formik.handleSubmit} className="task-form-card">
                 <div className="mb-3">
@@ -126,7 +133,7 @@ export function ToDoEdit() {
                 <button type="submit" className="button button-primary" disabled={formik.isSubmitting}>
                     <i className="bi bi-check2"></i> Save appointment
                 </button>
-                <Link to="/dashboard" className="button button-quiet">Cancel</Link>
+                <Link to={dashboardPath} className="button button-quiet">Cancel</Link>
             </form>
         </section>
     );

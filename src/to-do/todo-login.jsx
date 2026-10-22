@@ -28,7 +28,11 @@ export default function TodoLogin() {
 
                 setCookie("userid", user.user_id, { path: "/" });
                 setCookie("username", user.user_name, { path: "/" });
-                navigate("/dashboard");
+                navigate(
+                    user.role === "admin"
+                        ? "/admin"
+                        : "/dashboard"
+                );
             } catch (requestError) {
                 console.error("Unable to sign in:", requestError);
                 setError("Unable to sign in. Please check whether the API server is running.");
