@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Appointment Manager
 
 A React and Vite appointment manager with user registration, sign-in, and appointment creation, viewing, editing, and deletion. JSON Server provides the local API and stores data in `db.json`.
@@ -37,3 +38,7 @@ npm run build
 ```
 
 The API runs on `http://localhost:3000`; user and appointment data is stored in `db.json`.
+=======
+# Appoinment-Manager
+Appointment Manager is a web application for managing appointments, allowing users to create, view, update, and delete appointments easily.
+>>>>>>> 08b1988df8ca43d1e903094a824d0c28b927664d
