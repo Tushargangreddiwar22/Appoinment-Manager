@@ -1,0 +1,35 @@
+{
+  "users": [
+    {
+      "user_id": "tushar_nit",
+      "user_name": "Tushar Gangreddiwar",
+      "password": "Happy@123",
+      "email": "tushargang22@gmail.com",
+      "id": "HgP3RiDXssE"
+    },
+    {
+      "user_id": "pranay_nit",
+      "user_name": "Pranay Gangreddiwar",
+      "password": "Pranay@123",
+      "email": "pranaygang@gmail.com",
+      "id": "1NNnF73Tzz4"
+    },
+    {
+      "user_id": "tushar_it",
+      "user_name": "Tushar Gangreddiwar",
+      "password": "Happy@143",
+      "email": "tushargangreddiwar22@gmail.com",
+      "id": "eXdadgg8yB4"
+    }
+  ],
+  "appointments": [
+    {
+      "title": "Project Meeting",
+      "description": "Project review meeting and Preparing for the meeting.",
+      "date": "2026-02-13",
+      "user_id": "tushar_it",
+      "id": "1"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
